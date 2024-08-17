@@ -3,16 +3,16 @@ import io
 import boto3
 from PIL import Image
 
+rekognition_client = boto3.client('rekognition')
+
 
 def detect_faces(image):
-    client = boto3.client('rekognition')
-
     # Convert the image to bytes
     img_bytes = io.BytesIO()
     image.save(img_bytes, format='JPEG')  # Ensure the format is compatible with Rekognition
     img_bytes = img_bytes.getvalue()
 
-    response = client.detect_faces(
+    response = rekognition_client.detect_faces(
         Image={'Bytes': img_bytes},
         Attributes=['ALL']
     )

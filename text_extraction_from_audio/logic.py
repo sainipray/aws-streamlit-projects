@@ -1,18 +1,10 @@
+import json
 import os
 import time
 
 import boto3
-import requests
-from dotenv import load_dotenv
 
-load_dotenv()
-
-transcribe_client = boto3.client(
-    'transcribe',
-    region_name=os.getenv('AWS_DEFAULT_REGION'),
-    aws_access_key_id=os.getenv('AWS_ACCESS_KEY_ID'),
-    aws_secret_access_key=os.getenv('AWS_SECRET_ACCESS_KEY')
-)
+transcribe_client = boto3.client('transcribe')
 
 
 def extract_text_from_audio(audio_file):
@@ -49,20 +41,16 @@ def upload_audio_to_s3(audio_file, job_name):
     return f's3://{bucket_name}/{s3_key}'
 
 
-def download_transcript_from_s3(transcript_uri):
-    response = requests.get(transcript_uri)
-    if response.status_code == 200:
-        if response.content:  # Ensure content is present
-            try:
-                transcript_json = response.json()
-                return transcript_json
-            except ValueError as e:
-                print("Error decoding JSON:", e)
-                print("Response content:", response.content.decode('utf-8'))  # Print content for debugging
-                return None
-        else:
-            print("Empty response content")
-            return None
-    else:
-        print(f"Failed to download transcript. Status code: {response.status_code}")
+def download_transcript_from_s3(job_name):
+    s3_client = boto3.client('s3')
+    bucket_name = os.getenv('S3_BUCKET_NAME')
+    s3_key = f'{job_name}.json'  # Assuming the transcript is saved as a JSON file in S3
+
+    try:
+        response = s3_client.get_object(Bucket=bucket_name, Key=s3_key)
+        transcript_data = response['Body'].read().decode('utf-8')
+        transcript_json = json.loads(transcript_data)
+        return transcript_json
+    except Exception as e:
+        print(f"Failed to download transcript: {e}")
         return None
